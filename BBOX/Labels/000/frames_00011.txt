@@ -1,0 +1,9 @@
+8
+618 677 654 721 Mouse
+787 435 863 524 Minion_Blue
+758 704 837 798 Minion_Blue
+831 673 906 746 Minion_Blue
+840 768 908 829 Minion_Blue
+796 819 954 911 Ashe
+658 182 839 414 Galio
+867 3 1073 184 Turret_Red
