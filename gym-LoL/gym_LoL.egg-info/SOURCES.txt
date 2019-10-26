@@ -1,0 +1,7 @@
+README.md
+setup.py
+gym_LoL.egg-info/PKG-INFO
+gym_LoL.egg-info/SOURCES.txt
+gym_LoL.egg-info/dependency_links.txt
+gym_LoL.egg-info/requires.txt
+gym_LoL.egg-info/top_level.txt
