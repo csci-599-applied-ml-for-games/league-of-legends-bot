@@ -5,7 +5,7 @@ from pynput import mouse, keyboard, _util
 import time
 import pygetwindow as gw
 import re
-import os
+import cv2
 if sys.platform != 'darwin':
     import ctypes
 
@@ -297,24 +297,127 @@ def invite_popup_send_invites(sct, game_window_region, opponents):
     raise TimeoutError('Retry limit exhausted')
 
 
-def party_screen_start_game(sct, game_window_region, opponents):
-    retries = 40
+def party_screen_add_bot(sct, game_window_region):
+    retries = 20
     while retries:
         sct_img = sct.grab(game_window_region)
         img = ImageOps.invert(Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX'))
         width, height = img.size
-        region = (int(0.4125 * width), int(0.2625 * height), int(0.8125 * width), int(0.6625 * height))
-        words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT, config='--psm 11')
+        region = (int(0.715625 * width), int(0.3222222 * height), int(0.759375 * width), int(0.35 * height))
+        words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT)
+        matches = find_subset_indices(['‘Add', 'Bot'], words['text'])
+        if len(matches) == 0:
+            retries -= 1
+            time.sleep(1)
+            continue
+        index = matches[0]
+        yOffset = int(0.0625 * height)
+        xOffset = -int(0.165625 * width)
+        options_xOffset = int(0.10625 * width)
+        options_yOffset = int(0.20416666 * height)
+
+        (x, y, w, h) = (words['left'][index] + region[0], words['top'][index] + region[1],
+                        words['width'][index], words['height'][index])
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2),
+                                     int(y + game_window_region['top'] + h / 2))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2 + options_yOffset / 2))
+        mouse_controller.scroll(0, -2000)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2 + options_yOffset))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(3)
+
+        y += yOffset
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2),
+                                     int(y + game_window_region['top'] + h / 2))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2 + options_yOffset / 2))
+        mouse_controller.scroll(0, -2000)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2 + options_yOffset))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(3)
+
+        y += yOffset
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2),
+                                     int(y + game_window_region['top'] + h / 2))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(1)
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2 + xOffset),
+                                     int(y + game_window_region['top'] + h / 2 + options_yOffset / 2))
+        mouse_controller.scroll(0, -2000)
+        time.sleep(1)
+
+        mouse_controller.scroll(0, 125)
+        time.sleep(1)
+        return
+
+
+def bot_options_veigar(sct, game_window_region):
+    retries = 20
+    while retries:
+        sct_img = sct.grab(game_window_region)
+        img = ImageOps.invert(Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX'))
+        width, height = img.size
+        region = (int(0.5203125 * width), int(0.5 * height), int(0.6421875 * width), int(0.697222222 * height))
+        words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT)
         matches = []
-        for opponent in opponents:
-            matches = matches or find_subset_indices([opponent], words['text'])
+        for champion in ['Veigar', 'Velgar']:
+            matches = matches or find_subset_indices([champion], words['text'])
             if matches:
                 break
         if len(matches) == 0:
             retries -= 1
             time.sleep(1)
             continue
-        time.sleep(0.5)
+        index = matches[0]
+        (x, y, w, h) = (words['left'][index] + region[0], words['top'][index] + region[1],
+                        words['width'][index], words['height'][index])
+        mouse_controller.position = (int(x + game_window_region['left'] + w / 2),
+                                     int(y + game_window_region['top'] + h / 2))
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(3)
+        return
+
+
+def party_screen_start_game(sct, game_window_region, self_play, opponents):
+    retries = 40
+    while retries:
+        sct_img = sct.grab(game_window_region)
+        img = ImageOps.invert(Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX'))
+        width, height = img.size
+        if self_play:
+            region = (int(0.4125 * width), int(0.2625 * height), int(0.8125 * width), int(0.6625 * height))
+            words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT, config='--psm 11')
+            matches = []
+            for opponent in opponents:
+                matches = matches or find_subset_indices([opponent], words['text'])
+                if matches:
+                    break
+            if len(matches) == 0:
+                retries -= 1
+                time.sleep(1)
+                continue
+            time.sleep(0.5)
 
         region = (int(0.378125 * width), int(0.9375 * height), int(0.4625 * width), int(0.9625 * height))
         words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT)
@@ -406,7 +509,7 @@ def champion_screen_lock_in(sct, game_window_region, champion):
     raise TimeoutError('Retry limit exhausted')
 
 
-def create_custom_game(sct, password='lol12345', opponents=['bhanuarora05', 'bhanuaroraos'], champion='Ashe'):
+def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bhanuarora05', 'bhanuaroraos'], champion='Ashe'):
     try:
         game_window = gw.getWindowsWithTitle('League of Legends')[0]
         assert game_window.title == 'League of Legends'
@@ -424,9 +527,13 @@ def create_custom_game(sct, password='lol12345', opponents=['bhanuarora05', 'bha
     start_screen_play(sct, game_window_region)
     play_screen_create_custom(sct, game_window_region)
     create_custom_screen_confirm(sct, game_window_region, password)
-    party_screen_invite(sct, game_window_region)
-    invite_popup_send_invites(sct, game_window_region, opponents)
-    party_screen_start_game(sct, game_window_region, opponents)
+    if self_play:
+        party_screen_invite(sct, game_window_region)
+        invite_popup_send_invites(sct, game_window_region, opponents)
+    else:
+        party_screen_add_bot(sct, game_window_region)
+        bot_options_veigar(sct, game_window_region)
+    party_screen_start_game(sct, game_window_region, self_play, opponents)
     champion_screen_search(sct, game_window_region, champion)
     champion_screen_lock_in(sct, game_window_region, champion)
 
@@ -500,7 +607,6 @@ def join_custom_game(sct, opponents=['bhanuarora05', 'bhanuaroraos'], champion='
     time.sleep(20)
 
 
-
 def options_screen_exit_game(sct, game_window_region):
     retries = 20
     while retries:
@@ -564,7 +670,8 @@ def leave_custom_game(sct):
 
 def get_stats(sct_img):
     stats = {}
-    img = ImageOps.invert(Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX'))
+    orig_img = Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX')
+    img = ImageOps.invert(orig_img)
     width, height = img.size
     region = (int(0.8671875 * width), int(0.0009259 * height), int(0.915625 * width), int(0.0259259 * height))
     words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT, config='--psm 6')
@@ -579,20 +686,29 @@ def get_stats(sct_img):
     matches = [i for i, word in enumerate(words['text']) if re.match(r'^[0-9]+$', word) is not None]
     if len(matches) > 0:
         stats['minion_kills'] = int(words['text'][matches[0]].strip())
+    region = (int(0.3546875 * width), int(0.9527777 * height), int(0.56875 * width), int(0.96666666 * height))
+    hsv = cv2.cvtColor(np.array(orig_img.crop(region))[:, :, ::-1], cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, (36, 25, 25), (70, 255, 255))
+    labels, statistics = cv2.connectedComponentsWithStats(mask, 4)[1:3]  # step 4
+    largest_label = 1 + np.argmax(statistics[1:, cv2.CC_STAT_AREA])
+    stats['health'] = int(round(np.max(np.argwhere(labels == largest_label)[:, 1])*100/mask.shape[1]))
     return stats
 
 
+actions = [
+        no_op,
+        move_up,
+        move_right,
+        move_down,
+        move_left,
+        attack_minion,
+        attack_champion
+    ]
+
+
 def perform_action(action, champion, opponent, positions):
-    actions = {
-        'no_op': no_op,
-        'move_up': move_up,
-        'move_right': move_right,
-        'move_down': move_down,
-        'move_left': move_left,
-        'attack_minion': attack_minion,
-        'attack_champion': attack_champion,
-    }
-    actions[list(actions)[action]](champion, opponent, positions)
+    global actions
+    actions[action](champion, opponent, positions)
 
 '''
 print(words)
