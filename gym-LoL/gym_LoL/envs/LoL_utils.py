@@ -6,6 +6,7 @@ import time
 import pygetwindow as gw
 import re
 import cv2
+import numpy as np
 if sys.platform != 'darwin':
     import ctypes
 
