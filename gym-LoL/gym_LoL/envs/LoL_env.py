@@ -38,7 +38,7 @@ class LoLEnv(gym.Env):
                 'deaths': 0,
                 'assists': 0,
                 'minion_kills': 0,
-                'health': 100,
+                'health': 100
             },
             'positions': defaultdict(lambda: None)
         }
@@ -73,13 +73,21 @@ class LoLEnv(gym.Env):
                              metaPath="./cfg/obj.data")
 
     def get_reward(self, stats):
-        if 'kills' not in stats:
-            return 0, False
+        done = False
+        reward = -1
+        mk_scaler, health_scaler = 1, 1
+ 
+        reward += (stats['minion_kills'] - self.stats['minion_kills']) * mk_scaler
+        reward -= (stats['health'] - self.stats['health']) * health_scalar
         if stats['kills'] == 1:
-            return 100, True
+            reward += 1000
+            done = True
+
         elif stats['deaths'] == 1:
-            return -100, True
-        return 0, False
+            reward -= 1000
+            done = True
+        
+        return reward, done
 
     def update_stats(self, stats):
         self.state['stats'] = stats
@@ -124,7 +132,8 @@ class LoLEnv(gym.Env):
                 'kills': 0,
                 'deaths': 0,
                 'assists': 0,
-                'minion_kills': 0
+                'minion_kills': 0,
+                'health': 100
             },
             'positions': defaultdict(lambda: None)
         }
