@@ -1,16 +1,15 @@
 import gym
 import gym_LoL
-from baselines import ppo2
-from baselines.common.models import lstm
-from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 
-#something here to load model 
-#model = ppo2.load("ppo2_lol")
+from stable_baselines.common.policies import MlpLstmPolicy
+from stable_baselines.common.vec_env import SubprocVecEnv
+from stable_baselines import PPO2
 
-n_cpu = 1 # setup how many cpu's to run on 
-env = gym.make('LoL-v0') 
+def main (time): 
+    env = SubprocVecEnv([lambda: gym.make('LoL-v0') for i in range(1)])
+    model = PPO2 (MlpLstmPolicy, env, verbose=1, nminibatches=1)
+    model.learn(total_timesteps=time)
+    model.save('ppo_lol')
 
-model = ppo2(lstm, env, verbose = 1)
-model.learn(total_timesteps=25000) #configure this
-model.save("ppo2_lol")
-
+if __name__ == "__main__":
+    main(100000)
