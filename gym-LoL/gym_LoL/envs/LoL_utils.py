@@ -669,8 +669,7 @@ def leave_custom_game(sct):
     exit_game_popup_leave_game(sct, sct.monitors[1])
 
 
-def get_stats(sct_img):
-    stats = {}
+def get_stats(sct_img, stats):
     orig_img = Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX')
     img = ImageOps.invert(orig_img)
     width, height = img.size
@@ -690,9 +689,12 @@ def get_stats(sct_img):
     region = (int(0.3546875 * width), int(0.9527777 * height), int(0.56875 * width), int(0.96666666 * height))
     hsv = cv2.cvtColor(np.array(orig_img.crop(region))[:, :, ::-1], cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, (36, 25, 25), (70, 255, 255))
-    labels, statistics = cv2.connectedComponentsWithStats(mask, 4)[1:3]  # step 4
-    largest_label = 1 + np.argmax(statistics[1:, cv2.CC_STAT_AREA])
-    stats['health'] = int(round(np.max(np.argwhere(labels == largest_label)[:, 1])*100/mask.shape[1]))
+    labels, statistics = cv2.connectedComponentsWithStats(mask, connectivity=4)[1:3]
+    try:
+        largest_label = 1 + np.argmax(statistics[1:, cv2.CC_STAT_AREA])
+        stats['health'] = int(round(np.max(np.argwhere(labels == largest_label)[:, 1])*100/mask.shape[1]))
+    except ValueError:
+        pass
     return stats
 
 

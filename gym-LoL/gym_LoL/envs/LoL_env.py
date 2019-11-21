@@ -67,18 +67,18 @@ class LoLEnv(gym.Env):
                 self.bgsrv.stop()
             self.conn.close()
 
-    def get_observation(self, sct_img):
+    def get_observation(self, sct_img, featureMapLayer=22):
         return performDetect(imageMSS=sct_img, showImage=False,
                              configPath="./cfg/yolov3-tiny_obj.cfg", weightPath="yolov3-tiny_obj_last.weights",
-                             metaPath="./cfg/obj.data")
+                             metaPath="./cfg/obj.data", featureMapLayer=featureMapLayer)
 
     def get_reward(self, stats):
         done = False
         reward = -1
         mk_scaler, health_scaler = 1, 1
  
-        reward += (stats['minion_kills'] - self.stats['minion_kills']) * mk_scaler
-        reward -= (stats['health'] - self.stats['health']) * health_scalar
+        reward += (stats['minion_kills'] - self.state['stats']['minion_kills']) * mk_scaler
+        reward -= max(self.state['stats']['health'] - stats['health'], 0) * health_scaler
         if stats['kills'] == 1:
             reward += 1000
             done = True
@@ -107,7 +107,7 @@ class LoLEnv(gym.Env):
             perform_action(action, 'Ashe', 'Veigar', self.state['positions'])
         sct_img = self.sct.grab(self.sct.monitors[1])
         observation, detections = self.get_observation(sct_img)
-        stats = get_stats(sct_img)
+        stats = get_stats(sct_img, self.state['stats'].copy())
         reward, done = self.get_reward(stats)
         self.update_positions(detections)
         self.update_stats(stats)
