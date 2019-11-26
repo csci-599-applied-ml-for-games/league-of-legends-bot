@@ -31,6 +31,7 @@ from ctypes import *
 import math
 import random
 import os
+import numpy as np
 
 def sample(probs):
     s = sum(probs)
@@ -71,8 +72,6 @@ class IMAGE(Structure):
 class METADATA(Structure):
     _fields_ = [("classes", c_int),
                 ("names", POINTER(c_char_p))]
-
-
 
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
 #lib = CDLL("libdarknet.so", RTLD_GLOBAL)
@@ -150,6 +149,10 @@ get_network_boxes = lib.get_network_boxes
 get_network_boxes.argtypes = [c_void_p, c_int, c_int, c_float, c_float, POINTER(c_int), c_int, POINTER(c_int), c_int]
 get_network_boxes.restype = POINTER(DETECTION)
 
+get_network_image_layer = lib.get_network_image_layer_ptr
+get_network_image_layer.argtypes = [c_void_p, c_int]
+get_network_image_layer.restype = IMAGE
+
 make_network_boxes = lib.make_network_boxes
 make_network_boxes.argtypes = [c_void_p]
 make_network_boxes.restype = POINTER(DETECTION)
@@ -207,7 +210,6 @@ predict_image_letterbox.argtypes = [c_void_p, IMAGE]
 predict_image_letterbox.restype = POINTER(c_float)
 
 def array_to_image(arr):
-    import numpy as np
     # need to return old values to avoid python freeing memory
     arr = arr.transpose(2,0,1)
     c = arr.shape[0]
@@ -230,19 +232,32 @@ def classify(net, meta, im):
     res = sorted(res, key=lambda x: -x[1])
     return res
 
-def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
+def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, featureMapLayer=None, debug= False):
     """
     Performs the meat of the detection
     """
     #pylint: disable= C0321
     im = load_image(image, 0, 0)
     if debug: print("Loaded image")
-    ret = detect_image(net, meta, im, thresh, hier_thresh, nms, debug)
+    ret = detect_image(net, meta, im, thresh, hier_thresh, nms, featureMapLayer, debug)
     free_image(im)
     if debug: print("freed image")
     return ret
 
-def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
+def detect_frombytes(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, featureMapLayer=None, debug= False):
+    """
+        Performs the meat of the detection
+        """
+    # pylint: disable= C0321
+    im = make_image(image.width, image.height, 3)
+    copy_image_from_bytes(im, image.rgb)
+    if debug: print("Loaded image")
+    ret = detect_image(net, meta, im, thresh, hier_thresh, nms, featureMapLayer, debug)
+    free_image(im)
+    if debug: print("freed image")
+    return ret
+
+def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, featureMapLayer=None, debug= False):
     #import cv2
     #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
     #custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
@@ -260,6 +275,10 @@ def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False
     #letter_box = 1
     if debug: print("did prediction")
     #dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, letter_box) # OpenCV
+    feature_map = None
+    if featureMapLayer is not None:
+        img = get_network_image_layer(net, featureMapLayer)
+        feature_map = np.array(img.data[:img.h * img.w * img.c]).reshape((img.c, img.h, img.w))
     dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, letter_box)
     if debug: print("Got dets")
     num = pnum[0]
@@ -291,14 +310,16 @@ def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False
     if debug: print("did sort")
     free_detections(dets, num)
     if debug: print("freed detections")
-    return res
+    return feature_map, res
 
 
 netMain = None
 metaMain = None
 altNames = None
 
-def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
+def performDetect(imagePath="data/dog.jpg", imageMSS=None, featureMapLayer=None, thresh= 0.25, configPath = "./cfg/yolov3.cfg",
+                  weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False,
+                  initOnly= False):
     """
     Convenience function to handle the detection and returns of objects.
 
@@ -382,16 +403,20 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     if initOnly:
         print("Initialized detector")
         return None
-    if not os.path.exists(imagePath):
+    if imageMSS is not None:
+        detections = detect_frombytes(netMain, metaMain, imageMSS, thresh, featureMapLayer=featureMapLayer)
+    elif not os.path.exists(imagePath):
         raise ValueError("Invalid image path `"+os.path.abspath(imagePath)+"`")
+    else:
+        detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh, featureMapLayer=featureMapLayer)
     # Do the detection
     #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
-    detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
     if showImage:
         try:
             from skimage import io, draw
-            import numpy as np
-            image = io.imread(imagePath)
+            from PIL import Image
+            image = io.imread(imagePath) if imageMSS is None else \
+                np.array(Image.frombytes('RGB', imageMSS.size, imageMSS.bgra, 'raw', 'BGRX'))
             print("*** "+str(len(detections))+" Results, color coded by confidence ***")
             imcaption = []
             for detection in detections:
