@@ -1,0 +1,13 @@
+gym
+mss
+numpy
+mss
+rpyc
+pynput
+tensorflow-gpu==1.14.0
+stable-baselines
+opencv-python
+PyGetWindow
+notify-run
+pytesseract
+Pillow
