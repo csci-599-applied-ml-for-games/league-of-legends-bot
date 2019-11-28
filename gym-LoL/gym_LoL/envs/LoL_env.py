@@ -1,7 +1,7 @@
 import mss
 import gym
 from gym import spaces
-from gym_LoL.envs.LoL_utils import create_custom_game, join_custom_game, leave_custom_game, perform_action, get_stats
+from gym_LoL.envs.LoL_utils import create_custom_game, join_custom_game, leave_custom_game, perform_action, get_stats, check_champion
 from gym_LoL.envs.darknet.x64.darknet import performDetect
 from collections import defaultdict
 import numpy as np
@@ -139,6 +139,8 @@ class LoLEnv(gym.Env):
         else:
             create_custom_game(self.sct, self.self_play, password='lol12345', opponents=[],
                                champion=self.champion)
+        if not check_champion(self.sct.grab(self.sct.monitors[1]), self.champion):
+            return self.reset()
         self.start_time = time.time()
         self.state = {
             'stats': {

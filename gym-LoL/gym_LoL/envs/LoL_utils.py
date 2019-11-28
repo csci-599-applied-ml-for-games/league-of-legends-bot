@@ -554,6 +554,16 @@ def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bh
     time.sleep(20)
 
 
+def check_champion(sct_img, champion='Ashe'):
+    img = Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX')
+    width, height = img.size
+    region = (int(0.2890625 * width), int(0.89444444 * height), int(0.3338541 * width), int(0.9546296 * height))
+    img_gray = cv2.cvtColor(np.array(img.crop(region))[:, :, ::-1], cv2.COLOR_BGR2GRAY)
+    res = cv2.matchTemplate(img_gray, cv2.imread(champion+'.jpg', 0), cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, _ = cv2.minMaxLoc(res)
+    return max_val > 0.9
+
+
 def start_screen_join(sct, game_window_region, opponents):
     retries = 40
     while retries:
@@ -656,7 +666,7 @@ def exit_game_popup_leave_game(sct, game_window_region):
         mouse_controller.position = (int(x + game_window_region['left'] + w / 2),
                                      int(y + game_window_region['top'] + h / 2))
         mouse_controller.click(mouse.Button.left)
-        time.sleep(5)
+        time.sleep(15)
         return
     raise TimeoutError('Retry limit exhausted')
 
