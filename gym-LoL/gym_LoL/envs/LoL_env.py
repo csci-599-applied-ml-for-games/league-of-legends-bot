@@ -6,7 +6,9 @@ from gym_LoL.envs.darknet.x64.darknet import performDetect
 from collections import defaultdict
 import numpy as np
 import rpyc
+import cv2
 from threading import Thread
+import time
 
 
 class Service(rpyc.Service):
@@ -38,10 +40,14 @@ class LoLEnv(gym.Env):
                 'deaths': 0,
                 'assists': 0,
                 'minion_kills': 0,
-                'health': 100
+                'health': 100,
+                'opponent_health': 100
             },
             'positions': defaultdict(lambda: None)
         }
+        self.champion = 'Ashe'
+        self.opponent = 'Veigar'
+        self.opponent_template = cv2.imread(self.opponent+'.jpg', 0)
         performDetect(initOnly=True, configPath="./cfg/yolov3-tiny_obj.cfg",
                       weightPath="yolov3-tiny_obj_last.weights", metaPath="./cfg/obj.data")
         if self_play:
@@ -51,6 +57,8 @@ class LoLEnv(gym.Env):
                 self.server = Thread(target=self.conn.start)
                 self.server.start()
             else:
+                self.champion = 'Veigar'
+                self.opponent = 'Ashe'
                 self.conn = rpyc.connect("localhost", 18861, service=self.service)
                 self.bgsrv = rpyc.BgServingThread(self.conn)
 
@@ -75,10 +83,11 @@ class LoLEnv(gym.Env):
     def get_reward(self, stats):
         done = False
         reward = -1
-        mk_scaler, health_scaler = 1, 1
+        mk_scaler, health_scaler, opponent_health_scaler = 1, 1, 1.1
  
         reward += (stats['minion_kills'] - self.state['stats']['minion_kills']) * mk_scaler
-        reward -= max(self.state['stats']['health'] - stats['health'], 0) * health_scaler
+        reward += (self.state['stats']['opponent_health'] - stats['opponent_health']) * opponent_health_scaler
+        reward -= (self.state['stats']['health'] - stats['health']) * health_scaler
         if stats['kills'] == 1:
             reward += 1000
             done = True
@@ -93,25 +102,25 @@ class LoLEnv(gym.Env):
         self.state['stats'] = stats
 
     def update_positions(self, detections):
+        champion_position = self.state['positions'][self.champion]
         self.state['positions'].clear()
+        self.state['positions'][self.champion] = champion_position
         for detection in detections:
             self.state['positions'][detection[0]] = detection[2]
 
     def step(self, action):
-        if self.self_play:
-            if self.player == 1:
-                perform_action(action, 'Ashe', 'Veigar', self.state['positions'])
-            else:
-                perform_action(action, 'Veigar', 'Ashe', self.state['positions'])
-        else:
-            perform_action(action, 'Ashe', 'Veigar', self.state['positions'])
+        perform_action(action, self.champion, self.opponent, self.state['positions'])
         sct_img = self.sct.grab(self.sct.monitors[1])
         observation, detections = self.get_observation(sct_img)
-        try:
-            stats = get_stats(sct_img, self.state['stats'].copy())
-            reward, done = self.get_reward(stats)
-        except RuntimeError:
-            reward, done = -1001, True
+        stats = self.state['stats']
+        if time.time() - self.start_time > 900:
+            reward, done = -10001, True
+        else:
+            try:
+                stats = get_stats(sct_img, self.state['stats'].copy(), self.opponent_template)
+                reward, done = self.get_reward(stats)
+            except RuntimeError:
+                reward, done = -1001, True
         self.update_positions(detections)
         self.update_stats(stats)
         return observation, reward, done, {}
@@ -124,19 +133,21 @@ class LoLEnv(gym.Env):
         if self.self_play:
             if self.player == 1:
                 create_custom_game(self.sct, self.self_play, password='lol12345', opponents=['bullse2ye', 'dutse2ye'],
-                                   champion='Ashe')
+                                   champion=self.champion)
             else:
-                join_custom_game(self.sct, opponents=['raunaqtr'], champion='Veigar')
+                join_custom_game(self.sct, opponents=['raunaqtr'], champion=self.champion)
         else:
             create_custom_game(self.sct, self.self_play, password='lol12345', opponents=[],
-                               champion='Ashe')
+                               champion=self.champion)
+        self.start_time = time.time()
         self.state = {
             'stats': {
                 'kills': 0,
                 'deaths': 0,
                 'assists': 0,
                 'minion_kills': 0,
-                'health': 100
+                'health': 100,
+                'opponent_health': 100
             },
             'positions': defaultdict(lambda: None)
         }
@@ -145,5 +156,5 @@ class LoLEnv(gym.Env):
         self.update_positions(detections)
         return observation
 
-    def render(self):
+    def render(self, mode='human'):
         pass

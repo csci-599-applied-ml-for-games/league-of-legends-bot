@@ -306,7 +306,12 @@ def party_screen_add_bot(sct, game_window_region):
         width, height = img.size
         region = (int(0.715625 * width), int(0.3222222 * height), int(0.759375 * width), int(0.35 * height))
         words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT)
-        matches = find_subset_indices(['‘Add', 'Bot'], words['text'])
+
+        matches = []
+        for word in [['Add', 'Bot'], ['‘Add', 'Bot']]:
+            matches = matches or find_subset_indices(word, words['text'])
+            if matches:
+                break
         if len(matches) == 0:
             retries -= 1
             time.sleep(1)
@@ -669,7 +674,7 @@ def leave_custom_game(sct):
     exit_game_popup_leave_game(sct, sct.monitors[1])
 
 
-def get_stats(sct_img, stats):
+def get_stats(sct_img, stats, template):
     orig_img = Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX')
     img = ImageOps.invert(orig_img)
     width, height = img.size
@@ -682,6 +687,21 @@ def get_stats(sct_img, stats):
         mouse_controller.click(mouse.Button.left)
         time.sleep(5)
         raise RuntimeError('Inactive for too long')
+    region = (int(0.0703125 * width), int(0.01111111111 * height), int(0.1046875 * width), int(0.07407407 * height))
+    img_gray = cv2.cvtColor(np.array(orig_img.crop(region))[:, :, ::-1], cv2.COLOR_BGR2GRAY)
+    res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, _ = cv2.minMaxLoc(res)
+    if max_val > 0.8:
+        region = (int(0.10625 * width), int(0.0379629629 * height), int(0.178125 * width), int(0.05 * height))
+        hsv = cv2.cvtColor(np.array(orig_img.crop(region))[:, :, ::-1], cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, (0, 70, 50), (10, 255, 255))
+        labels, statistics = cv2.connectedComponentsWithStats(mask, connectivity=8)[1:3]
+        try:
+            largest_label = 1 + np.argmax(statistics[1:, cv2.CC_STAT_AREA])
+            stats['opponent_health'] = int(
+                round(np.max(np.argwhere(labels == largest_label)[:, 1]) * 100 / (mask.shape[1] - 1)))
+        except ValueError:
+            pass
     region = (int(0.8671875 * width), int(0.0009259 * height), int(0.915625 * width), int(0.0259259 * height))
     words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT, config='--psm 6')
     matches = [i for i, word in enumerate(words['text']) if re.match(r'^[0-9]+\/[0-9]+\/[0-9]+$', word) is not None]
@@ -701,7 +721,7 @@ def get_stats(sct_img, stats):
     labels, statistics = cv2.connectedComponentsWithStats(mask, connectivity=4)[1:3]
     try:
         largest_label = 1 + np.argmax(statistics[1:, cv2.CC_STAT_AREA])
-        stats['health'] = int(round(np.max(np.argwhere(labels == largest_label)[:, 1])*100/mask.shape[1]))
+        stats['health'] = int(round(np.max(np.argwhere(labels == largest_label)[:, 1])*100/(mask.shape[1] - 1)))
     except ValueError:
         pass
     return stats

@@ -7,27 +7,23 @@ from stable_baselines import PPO2
 
 from notify_run import Notify
 
-def update model (model = None, time):
-    if model == None :
-        env = DummyVecEnv([lambda: gym.make('LoL-v0')])
-        model = PPO2(MlpLstmPolicy, env, verbose=1, nminibatches=1)
-    
-    model.learn(total_timesteps=time)
-    model.save('ppo_lol')
-    
-    return model
-   
 
 if __name__ == "__main__":
     notify = Notify(endpoint='https://notify.run/1GQn88vSML1rmxdz')
     try:
-        model = None
-        for i in range (10000) :
-            model = update_model(model, 10)
-
+        env = DummyVecEnv([lambda: gym.make('LoL-v0')])
+        model_path = 'ppo_lol'
+        try:
+            model = PPO2.load(model_path, env)
+        except ValueError:
+            model = PPO2(MlpLstmPolicy, env, verbose=1, nminibatches=1)
+        for i in range(100):
+            model.learn(total_timesteps=2500)
+            model.save(model_path)
     except (KeyboardInterrupt, SystemExit):
         raise
     except:
         notify.send('Training Failed for LoL-v0')
+        raise
     else:
         notify.send('Training Completed for LoL-v0')
