@@ -673,6 +673,15 @@ def get_stats(sct_img, stats):
     orig_img = Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX')
     img = ImageOps.invert(orig_img)
     width, height = img.size
+    region = (int(0.328125 * width), int(0.272222222 * height), int(0.4375 * width), int(0.30925925 * height))
+    words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT)
+    matches = find_subset_indices(['Network', 'Warning'], words['text'])
+    if len(matches) > 0:
+        (x, y) = (int(0.38125 * width), int(0.475 * height))
+        mouse_controller.position = (x, y)
+        mouse_controller.click(mouse.Button.left)
+        time.sleep(5)
+        raise RuntimeError('Inactive for too long')
     region = (int(0.8671875 * width), int(0.0009259 * height), int(0.915625 * width), int(0.0259259 * height))
     words = pytesseract.image_to_data(img.crop(region), output_type=pytesseract.Output.DICT, config='--psm 6')
     matches = [i for i, word in enumerate(words['text']) if re.match(r'^[0-9]+\/[0-9]+\/[0-9]+$', word) is not None]

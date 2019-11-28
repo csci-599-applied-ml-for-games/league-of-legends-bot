@@ -107,8 +107,11 @@ class LoLEnv(gym.Env):
             perform_action(action, 'Ashe', 'Veigar', self.state['positions'])
         sct_img = self.sct.grab(self.sct.monitors[1])
         observation, detections = self.get_observation(sct_img)
-        stats = get_stats(sct_img, self.state['stats'].copy())
-        reward, done = self.get_reward(stats)
+        try:
+            stats = get_stats(sct_img, self.state['stats'].copy())
+            reward, done = self.get_reward(stats)
+        except RuntimeError:
+            reward, done = -1001, True
         self.update_positions(detections)
         self.update_stats(stats)
         return observation, reward, done, {}
