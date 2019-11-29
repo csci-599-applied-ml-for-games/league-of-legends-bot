@@ -518,7 +518,7 @@ def champion_screen_lock_in(sct, game_window_region, champion):
 def wait_for_game(sct, opponent_template):
     retries = 100
     while retries:
-        if get_stats(sct.grab(sct.monitors[1]), {}, opponent_template) == {}:
+        if get_stats(sct.grab(sct.monitors[1]), {}, opponent_template) != {'kills': 0, 'deaths': 0, 'assists': 0, 'minion_kills': 0, 'health': 100}:
             retries -= 1
             time.sleep(1)
             continue
