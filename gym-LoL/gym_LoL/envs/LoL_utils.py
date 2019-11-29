@@ -510,12 +510,24 @@ def champion_screen_lock_in(sct, game_window_region, champion):
         mouse_controller.position = (int(x + game_window_region['left'] + w / 2),
                                      int(y + game_window_region['top'] + h / 2))
         mouse_controller.click(mouse.Button.left)
-        time.sleep(80)
+        time.sleep(20)
         return
     raise TimeoutError('Retry limit exhausted')
 
 
-def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bhanuarora05', 'bhanuaroraos'], champion='Ashe'):
+def wait_for_game(sct, opponent_template):
+    retries = 100
+    while retries:
+        if get_stats(sct.grab(sct.monitors[1]), {}, opponent_template) == {}:
+            retries -= 1
+            time.sleep(1)
+            continue
+        time.sleep(20)
+        return
+    raise TimeoutError('Retry limit exhausted')
+
+
+def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bhanuarora05', 'bhanuaroraos'], champion='Ashe', opponent_template=None):
     try:
         game_window = gw.getWindowsWithTitle('League of Legends')[0]
         assert game_window.title == 'League of Legends'
@@ -543,6 +555,8 @@ def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bh
     champion_screen_search(sct, game_window_region, champion)
     champion_screen_lock_in(sct, game_window_region, champion)
 
+    wait_for_game(sct, opponent_template)
+
     global MAX_WIDTH, MAX_HEIGHT
     MAX_WIDTH = sct.monitors[1]['width']
     MAX_HEIGHT = sct.monitors[1]['height']
@@ -551,7 +565,7 @@ def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bh
     time.sleep(0.5)
     mouse_controller.position = (int(0.9223958 * MAX_WIDTH), int(0.8777777 * MAX_HEIGHT))
     mouse_controller.click(mouse.Button.right)
-    time.sleep(20)
+    time.sleep(50)
 
 
 def check_champion(sct_img, champion='Ashe'):
@@ -695,7 +709,7 @@ def get_stats(sct_img, stats, template):
         (x, y) = (int(0.38125 * width), int(0.475 * height))
         mouse_controller.position = (x, y)
         mouse_controller.click(mouse.Button.left)
-        time.sleep(5)
+        time.sleep(15)
         raise RuntimeError('Inactive for too long')
     region = (int(0.0703125 * width), int(0.01111111111 * height), int(0.1046875 * width), int(0.07407407 * height))
     img_gray = cv2.cvtColor(np.array(orig_img.crop(region))[:, :, ::-1], cv2.COLOR_BGR2GRAY)

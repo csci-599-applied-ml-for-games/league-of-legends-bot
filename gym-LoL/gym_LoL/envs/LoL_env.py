@@ -120,7 +120,7 @@ class LoLEnv(gym.Env):
                 stats = get_stats(sct_img, self.state['stats'].copy(), self.opponent_template)
                 reward, done = self.get_reward(stats)
             except RuntimeError:
-                reward, done = -1001, True
+                reward, done = -10001, True
         self.update_positions(detections)
         self.update_stats(stats)
         return observation, reward, done, {}
@@ -133,12 +133,12 @@ class LoLEnv(gym.Env):
         if self.self_play:
             if self.player == 1:
                 create_custom_game(self.sct, self.self_play, password='lol12345', opponents=['bullse2ye', 'dutse2ye'],
-                                   champion=self.champion)
+                                   champion=self.champion, opponent_template=self.opponent_template)
             else:
                 join_custom_game(self.sct, opponents=['raunaqtr'], champion=self.champion)
         else:
             create_custom_game(self.sct, self.self_play, password='lol12345', opponents=[],
-                               champion=self.champion)
+                               champion=self.champion, opponent_template=self.opponent_template)
         if not check_champion(self.sct.grab(self.sct.monitors[1]), self.champion):
             return self.reset()
         self.start_time = time.time()
