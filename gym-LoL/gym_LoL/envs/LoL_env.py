@@ -48,6 +48,8 @@ class LoLEnv(gym.Env):
         self.champion = 'Ashe'
         self.opponent = 'Veigar'
         self.opponent_template = cv2.imread(self.opponent+'.jpg', 0)
+        self.start_time = time.time()
+        self.away_time = time.time()
         performDetect(initOnly=True, configPath="./cfg/yolov3-tiny_obj.cfg",
                       weightPath="yolov3-tiny_obj_last.weights", metaPath="./cfg/obj.data")
         if self_play:
@@ -86,7 +88,8 @@ class LoLEnv(gym.Env):
         mk_scaler, health_scaler, opponent_health_scaler = 1, 1, 1.5
  
         reward += (stats['minion_kills'] - self.state['stats']['minion_kills']) * mk_scaler
-        reward += (self.state['stats']['opponent_health'] - stats['opponent_health']) * opponent_health_scaler
+        reward += max(self.state['stats']['opponent_health'] - stats['opponent_health'], 0) * opponent_health_scaler
+        reward += min(self.state['stats']['opponent_health'] - stats['opponent_health'], 0) * 1.1
         reward -= max(self.state['stats']['health'] - stats['health'], 0) * health_scaler
         if time.time() - self.away_time > 120:
             reward -= 10
