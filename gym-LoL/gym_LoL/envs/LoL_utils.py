@@ -565,7 +565,7 @@ def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bh
     time.sleep(0.5)
     mouse_controller.position = (int(0.9223958 * MAX_WIDTH), int(0.8777777 * MAX_HEIGHT))
     mouse_controller.click(mouse.Button.right)
-    time.sleep(50)
+    time.sleep(55)
 
 
 def check_champion(sct_img, champion='Ashe'):

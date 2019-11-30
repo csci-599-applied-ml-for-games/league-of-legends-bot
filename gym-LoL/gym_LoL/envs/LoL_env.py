@@ -83,11 +83,14 @@ class LoLEnv(gym.Env):
     def get_reward(self, stats):
         done = False
         reward = -1
-        mk_scaler, health_scaler, opponent_health_scaler = 1, 1, 1.1
+        mk_scaler, health_scaler, opponent_health_scaler = 1, 1, 1.5
  
         reward += (stats['minion_kills'] - self.state['stats']['minion_kills']) * mk_scaler
         reward += (self.state['stats']['opponent_health'] - stats['opponent_health']) * opponent_health_scaler
-        reward -= (self.state['stats']['health'] - stats['health']) * health_scaler
+        reward -= max(self.state['stats']['health'] - stats['health'], 0) * health_scaler
+        if time.time() - self.away_time > 120:
+            reward -= 10
+
         if stats['kills'] == 1:
             reward += 1000
             done = True
@@ -107,13 +110,15 @@ class LoLEnv(gym.Env):
         self.state['positions'][self.champion] = champion_position
         for detection in detections:
             self.state['positions'][detection[0]] = detection[2]
+        if (self.state['positions']['Minion_Red'] is not None) or (self.state['positions']['Minion_Blue'] is not None):
+            self.away_time = time.time()
 
     def step(self, action):
         perform_action(action, self.champion, self.opponent, self.state['positions'])
         sct_img = self.sct.grab(self.sct.monitors[1])
         observation, detections = self.get_observation(sct_img)
         stats = self.state['stats']
-        if time.time() - self.start_time > 900:
+        if time.time() - self.start_time > 600:
             reward, done = -10001, True
         else:
             try:
@@ -142,6 +147,7 @@ class LoLEnv(gym.Env):
         if not check_champion(self.sct.grab(self.sct.monitors[1]), self.champion):
             return self.reset()
         self.start_time = time.time()
+        self.away_time = time.time()
         self.state = {
             'stats': {
                 'kills': 0,
