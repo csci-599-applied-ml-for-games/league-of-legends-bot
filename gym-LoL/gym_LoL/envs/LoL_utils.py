@@ -522,7 +522,7 @@ def wait_for_game(sct, opponent_template):
             retries -= 1
             time.sleep(1)
             continue
-        time.sleep(20)
+        time.sleep(60)
         return
     raise TimeoutError('Retry limit exhausted')
 
@@ -565,7 +565,7 @@ def create_custom_game(sct, self_play=False, password='lol12345', opponents=['bh
     time.sleep(0.5)
     mouse_controller.position = (int(0.9223958 * MAX_WIDTH), int(0.8777777 * MAX_HEIGHT))
     mouse_controller.click(mouse.Button.right)
-    time.sleep(55)
+    time.sleep(20)
 
 
 def check_champion(sct_img, champion='Ashe'):
