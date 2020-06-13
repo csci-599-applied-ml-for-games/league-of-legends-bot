@@ -9,6 +9,7 @@
 * [Trained YOLOv3 model weights](https://drive.google.com/file/d/1cJtTaaeY7xOI8P7C0lJ7kyEco2fsjPgx/view?usp=sharing)
 * [YOLOv3 .cfg file](https://drive.google.com/file/d/1juBqe6SQbos621ZPfhurQe_5ZLvjaXCW/view?usp=sharing)
 * [YOLOv3 .data file](https://drive.google.com/open?id=1Q1FB6sVb3uAoba6tQ871KapTkRvmyMQF)
+* [PPO Model](https://drive.google.com/file/d/1BKxnyMEM7eUUfRoU00l99VY3aoQZzshv/view?usp=sharing)
 
 ### Requirements
 * Windows
