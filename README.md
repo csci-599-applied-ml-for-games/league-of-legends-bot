@@ -1,5 +1,8 @@
 # league-of-legends-bot
 
+### Demo Videos
+* [Object detection demo](https://drive.google.com/file/d/1Gh4WtFk9ToJuur6n2vqFqkCO9sqrxSoX/view?usp=sharing)
+
 ### Requirements
 * Windows
 * Clone [darknet for windows](https://github.com/AlexeyAB/darknet) into current directory
