@@ -2,6 +2,13 @@
 
 ### Demo Videos
 * [Object detection demo](https://drive.google.com/file/d/1Gh4WtFk9ToJuur6n2vqFqkCO9sqrxSoX/view?usp=sharing)
+* [LSTM and LSTM+PPO demo](https://drive.google.com/open?id=1pfB3na3cBMGpqV61aJ8TGsxrXeY8EJpf)
+
+### Materials
+* [League of Legends Object Detection Images and Labels](https://drive.google.com/open?id=1juBqe6SQbos621ZPfhurQe_5ZLvjaXCW)
+* [Trained YOLOv3 model weights](https://drive.google.com/file/d/1cJtTaaeY7xOI8P7C0lJ7kyEco2fsjPgx/view?usp=sharing)
+* [YOLOv3 .cfg file](https://drive.google.com/file/d/1juBqe6SQbos621ZPfhurQe_5ZLvjaXCW/view?usp=sharing)
+* [YOLOv3 .data file](https://drive.google.com/open?id=1Q1FB6sVb3uAoba6tQ871KapTkRvmyMQF)
 
 ### Requirements
 * Windows
