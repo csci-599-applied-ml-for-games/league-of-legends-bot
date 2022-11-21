@@ -4,7 +4,7 @@ numpy
 mss
 rpyc
 pynput
-tensorflow-gpu==1.14.0
+tensorflow-gpu==2.9.3
 stable-baselines
 opencv-python
 PyGetWindow
